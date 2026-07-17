@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Script FX Guide · Velox Editor</title>
+<meta name="description" content="Documentation for Velox Editor Script FX: the scripting model, fx helpers, export rules, sandbox limits, and fifteen ready-to-use examples." />
+<meta name="theme-color" content="#0a0d13" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="apple-touch-icon" href="favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#0a0d13;--bg-2:#0d1119;--panel:#12161f;--panel-2:#161b26;--line:#1e2531;--line-2:#2a3342;--text:#e8eef6;--muted:#8a97a8;--muted-2:#5f6b7c;--cyan:#45c8ef;--cyan-bright:#6dd6f5;--cyan-deep:#2aa3d4;--violet:#7c6cf0;--violet-bright:#9d8dff;--green:#4ade80;--amber:#f5c451;--ease:cubic-bezier(.22,1,.36,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+::selection{background:rgba(69,200,239,.28)}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(900px 600px at 80% -5%,rgba(124,108,240,.14),transparent 60%),radial-gradient(900px 700px at 10% 5%,rgba(69,200,239,.12),transparent 60%),var(--bg)}
+.mono{font-family:'JetBrains Mono',monospace}
+header.nav{position:sticky;top:0;z-index:100;background:rgba(10,13,19,.82);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.14em;font-size:15px}
+.brand .dot{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:grid;place-items:center;box-shadow:0 0 18px rgba(69,200,239,.5)}
+.brand .dot svg{width:12px;height:12px}
+.nav-right{display:flex;align-items:center;gap:22px;font-size:14px;color:var(--muted)}
+.nav-right a.link:hover{color:var(--text)}
+.nav-cta{display:inline-flex;align-items:center;gap:8px;background:var(--cyan);color:#04121a;font-weight:700;font-size:13.5px;padding:9px 15px;border-radius:9px;transition:all .2s var(--ease)}
+.nav-cta:hover{background:var(--cyan-bright);transform:translateY(-1px)}
+.doc-head{max-width:1180px;margin:0 auto;padding:64px 24px 26px}
+.doc-head .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:14px}
+.doc-head .eyebrow::before{content:"";width:26px;height:1px;background:var(--cyan);opacity:.7}
+.doc-head h1{font-size:clamp(34px,5.5vw,54px);font-weight:900;letter-spacing:-.03em}
+.doc-head h1 .grad{background:linear-gradient(110deg,var(--cyan-bright),var(--violet-bright) 75%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.doc-head p{color:var(--muted);max-width:720px;margin-top:16px;font-size:17px}
+.layout{max-width:1180px;margin:0 auto;padding:20px 24px 100px;display:grid;grid-template-columns:250px 1fr;gap:48px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.toc{display:none}}
+.toc{position:sticky;top:88px;font-size:13.5px;max-height:calc(100vh - 110px);overflow-y:auto}
+.toc-h{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);margin-bottom:12px}
+.toc ul{list-style:none}
+.toc>ul>li>a{display:block;padding:6px 0 6px 14px;color:var(--muted);border-left:2px solid var(--line);transition:all .18s}
+.toc>ul>li>a:hover{color:var(--text);border-color:var(--line-2)}
+.toc a.active{color:var(--cyan-bright);border-color:var(--cyan)}
+.toc .sub ul{margin:2px 0 8px}
+.toc .sub a{display:block;padding:4px 0 4px 26px;color:var(--muted-2);border-left:2px solid var(--line);font-size:12.5px;transition:all .18s}
+.toc .sub a:hover{color:var(--muted)}
+.toc .sub a.active{color:var(--cyan-bright);border-color:var(--cyan)}
+.content{min-width:0}
+.content h2{font-size:clamp(24px,3.2vw,32px);font-weight:800;letter-spacing:-.02em;margin:52px 0 8px;padding-top:12px;scroll-margin-top:84px}
+.content h2:first-child{margin-top:0}
+.content h3{font-size:20px;font-weight:700;margin:0 0 6px;scroll-margin-top:84px}
+.content p{color:var(--muted-1,#aeb9c7);margin:12px 0;font-size:15.5px}
+.content p.lead{color:var(--muted);font-size:17px}
+.content ul.bullets{margin:14px 0 14px 2px;padding-left:0;list-style:none}
+.content ul.bullets li{position:relative;padding-left:22px;margin:9px 0;color:var(--muted);font-size:15.5px}
+.content ul.bullets li::before{content:"";position:absolute;left:2px;top:11px;width:7px;height:7px;border-radius:2px;background:linear-gradient(135deg,var(--cyan),var(--violet))}
+.content ul.bullets b,.content p b{color:var(--text);font-weight:600}
+.content code.inline{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--panel-2);border:1px solid var(--line);color:var(--cyan-bright);padding:1px 6px;border-radius:5px}
+.tbl{width:100%;border-collapse:collapse;margin:18px 0;font-size:14.5px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tbl th,.tbl td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+.tbl thead th{background:var(--panel);color:var(--muted-2);font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.tbl tbody tr:last-child td,.tbl tr:last-child td{border-bottom:none}
+.tbl td:first-child code,.tbl td:first-child{font-family:'JetBrains Mono',monospace;color:var(--cyan-bright);white-space:nowrap}
+.code-card{background:#0b0f16;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;margin:16px 0;box-shadow:0 20px 50px -24px rgba(0,0,0,.7)}
+.code-top{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.code-top .tl{display:flex;gap:6px}
+.code-top .tl i{width:11px;height:11px;border-radius:50%;display:block;background:var(--line-2)}
+.code-top .tl i:nth-child(1){background:#ff5f57}.code-top .tl i:nth-child(2){background:#febc2e}.code-top .tl i:nth-child(3){background:#28c840}
+.code-top .cname{margin-left:6px;font-size:12.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.code-top .copy{margin-left:auto;font-size:11.5px;font-family:'JetBrains Mono',monospace;color:var(--muted);background:var(--bg-2);border:1px solid var(--line-2);padding:4px 12px;border-radius:7px;cursor:pointer;transition:all .18s}
+.code-top .copy:hover{color:var(--cyan-bright);border-color:var(--cyan)}
+.code-top .copy.done{color:var(--green);border-color:var(--green)}
+pre{margin:0;padding:16px 18px;overflow-x:auto}
+pre code{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.75;color:#c8d3e0;white-space:pre}
+.ex{padding:26px 0;border-top:1px solid var(--line)}
+.ex:first-of-type{border-top:none}
+.callout{display:flex;gap:14px;background:linear-gradient(180deg,rgba(124,108,240,.08),rgba(124,108,240,.02));border:1px solid rgba(124,108,240,.3);border-radius:12px;padding:16px 18px;margin:18px 0}
+.callout .ci{flex:none;width:30px;height:30px;border-radius:8px;background:rgba(124,108,240,.18);display:grid;place-items:center}
+.callout .ci svg{width:17px;height:17px;color:var(--violet-bright)}
+.callout p{margin:0;color:var(--muted);font-size:14.5px}
+.callout b{color:var(--text)}
+footer{border-top:1px solid var(--line);background:var(--bg-2)}
+.foot-in{max-width:1180px;margin:0 auto;padding:30px 24px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted-2)}
+.foot-in a:hover{color:var(--cyan)}
+.backtop{display:inline-flex;align-items:center;gap:7px;color:var(--muted)}
+.scroll-prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet));z-index:200;box-shadow:0 0 10px var(--cyan)}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 8px;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:var(--text);background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-2);border-bottom-width:2px;border-radius:7px;line-height:1}
+.kbd + .kbd{margin-left:5px}
+.kbd-plus{color:var(--muted-2);margin:0 5px;font-size:12px}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:22px}
+@media(max-width:680px){.sc-grid{grid-template-columns:1fr}}
+.sc-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.sc-card h4{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);font-weight:600;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--bg-2)}
+.sc-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 18px;border-bottom:1px solid var(--line)}
+.sc-row:last-child{border-bottom:none}
+.sc-row .lab{color:var(--muted);font-size:14.5px}
+.sc-row .keys{display:flex;align-items:center;flex:none}
+</style>
+</head>
+<body>
+<div class="scroll-prog" id="scrollProg"></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="brand"><span class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4l14 8L6 20V4z" fill="#04121a"/></svg></span>VELOX</a>
+    <div class="nav-right">
+      <a class="link" href="index.html">Home</a>
+      <a class="link" href="index.html#features">Features</a>
+      <a class="nav-cta" href="index.html#download">
+        <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#04121a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="doc-head">
+  <span class="eyebrow">Documentation</span>
+  <h1>Script FX <span class="grad">Guide</span></h1>
+  <p>Script FX clips let you draw scripted, animated visuals that composite over your video: animated graphs, vector motion, title cards, generative backgrounds, and more. Everything you draw runs in a sandboxed worker and is rasterised into the final export automatically.</p>
+</div>
+
+<div class="layout">
+  <nav class="toc"><span class="toc-h">On this page</span><ul><li><a href="#install" data-t="install">Installation</a></li><li><a href="#overview" data-t="overview">Overview</a></li><li><a href="#model" data-t="model">The scripting model</a></li><li><a href="#helpers" data-t="helpers">The fx helpers</a></li><li><a href="#rules" data-t="rules">Rules for export</a></li><li><a href="#sandbox" data-t="sandbox">Sandbox limits</a></li><li><a href="#examples" data-t="examples">Examples</a></li><li class="sub"><ul><li><a href="#ex-progress" data-t="ex-progress">Progress bar</a></li><li><a href="#ex-countdown" data-t="ex-countdown">Countdown number</a></li><li><a href="#ex-line" data-t="ex-line">Animated line chart</a></li><li><a href="#ex-polygon" data-t="ex-polygon">Rotating polygon</a></li><li><a href="#ex-gradient" data-t="ex-gradient">Gradient sweep</a></li><li><a href="#ex-typewriter" data-t="ex-typewriter">Typewriter title</a></li><li><a href="#ex-ring" data-t="ex-ring">Circular progress ring</a></li><li><a href="#ex-eq" data-t="ex-eq">Equalizer bars</a></li><li><a href="#ex-starfield" data-t="ex-starfield">Starfield (seeded randomness)</a></li><li><a href="#ex-ball" data-t="ex-ball">Bouncing ball with easing</a></li><li><a href="#ex-lower" data-t="ex-lower">Lower-third title plate</a></li><li><a href="#ex-pulse" data-t="ex-pulse">Radial pulse rings</a></li><li><a href="#ex-clock" data-t="ex-clock">Analog clock hand sweep</a></li><li><a href="#ex-grid" data-t="ex-grid">Grid / matrix background</a></li><li><a href="#ex-vignette" data-t="ex-vignette">Vignette / frame border</a></li></ul></li><li><a href="#tips" data-t="tips">Tips &amp; patterns</a></li><li><a href="#reference" data-t="reference">Reference</a></li><li><a href="#shortcuts" data-t="shortcuts">Keyboard shortcuts</a></li></ul></nav>
+  <main class="content">
+
+    <h2 id="install">Installation</h2><p class="lead">Download Velox Editor for your platform, then make sure FFmpeg is installed. Velox uses <code class="inline">ffmpeg</code> and <code class="inline">ffprobe</code> for media import, transcoding, and export, and both must be available on your system PATH.</p><div class="callout"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg></span><p><b>Get the app.</b> Download the build for your platform from the <a href="https://kcfresh53.itch.io/velox-editor" target="_blank" rel="noopener" style="color:var(--cyan-bright)">Velox Editor download page</a>, then follow the FFmpeg steps for your operating system below.</p></div><h3>macOS</h3><p>The simplest route is <a href="https://brew.sh" target="_blank" rel="noopener" style="color:var(--cyan-bright)">Homebrew</a>, which installs both binaries and adds them to your PATH automatically:</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">Terminal</span><button class="copy" type="button">Copy</button></div><pre><code>brew install ffmpeg</code></pre></div><p>If you prefer not to use Homebrew, download a static build from <code class="inline">ffmpeg.org</code> or <code class="inline">evermeet.cx/ffmpeg</code>, then move the <code class="inline">ffmpeg</code> and <code class="inline">ffprobe</code> binaries into a directory on your PATH, such as <code class="inline">/usr/local/bin</code>.</p><div class="callout"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.7 3.9a2 2 0 00-3.4 0z"/></svg></span><p><b>Sign the app before first launch.</b> Because Velox is distributed outside the App Store, macOS Gatekeeper may block it. After moving Velox Editor into your Applications folder, run this once in Terminal, then open the app normally:</p></div><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">Terminal</span><button class="copy" type="button">Copy</button></div><pre><code>xattr -cr '/Applications/Velox Editor.app'</code></pre></div><h3>Windows</h3><p>Install FFmpeg with a package manager, which adds it to your PATH for you:</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">PowerShell</span><button class="copy" type="button">Copy</button></div><pre><code>winget install Gyan.FFmpeg
+# or, with Chocolatey:
+choco install ffmpeg</code></pre></div><p>To install manually, download a build from <code class="inline">gyan.dev</code> or <code class="inline">ffmpeg.org</code>, extract it, and add the <code class="inline">bin</code> folder (the one containing <code class="inline">ffmpeg.exe</code> and <code class="inline">ffprobe.exe</code>) to your PATH under System Properties, Environment Variables, Path. Restart Velox after changing your PATH.</p><h3>Linux</h3><p>Install FFmpeg from your distribution package manager. This places <code class="inline">ffmpeg</code> and <code class="inline">ffprobe</code> on your PATH:</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">bash</span><button class="copy" type="button">Copy</button></div><pre><code># Debian / Ubuntu
+sudo apt install ffmpeg
+
+# Fedora
+sudo dnf install ffmpeg
+
+# Arch
+sudo pacman -S ffmpeg</code></pre></div><p>If you run the AppImage build, make it executable first with <code class="inline">chmod +x Velox-Editor.AppImage</code>, then launch it. The AppImage still relies on FFmpeg being on your PATH.</p><h3>Verify the install</h3><p>Confirm both tools are visible from a terminal. If each command prints a version, Velox will find them:</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">Terminal</span><button class="copy" type="button">Copy</button></div><pre><code>ffmpeg -version
+ffprobe -version</code></pre></div>
+
+    <h2 id="overview">Overview</h2>
+    <p>To use one, add a <b>Script FX Track</b> from the timeline "+" menu, double-click the track to create a clip (this opens the editor), or double-click any existing Script FX clip to edit it.</p>
+    <div class="callout"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></span><p><b>The canvas is transparent every frame.</b> Only what you draw is composited over the layers beneath, and Velox clears the canvas for you before each call, so you never need to clear it yourself.</p></div>
+
+    <h2 id="model">The scripting model</h2>
+    <p>Your script is a <b>function body</b> that runs once per frame. These names are in scope:</p>
+    <table class="tbl">
+      <thead><tr><th>Name</th><th>Type</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>ctx</td><td>CanvasRenderingContext2D</td><td>The 2D drawing context, sized to the project.</td></tr>
+        <tr><td>t</td><td>number</td><td>Clip-local time in seconds (starts at 0).</td></tr>
+        <tr><td>w</td><td>number</td><td>Canvas width in pixels (project width).</td></tr>
+        <tr><td>h</td><td>number</td><td>Canvas height in pixels (project height).</td></tr>
+        <tr><td>fx</td><td>object</td><td>Small helper library (see below).</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="helpers">The fx helpers</h2>
+    <p>A small set of math helpers you will reach for constantly:</p>
+    <div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">fx-helpers.js</span><button class="copy" type="button">Copy</button></div><pre><code>fx.TWO_PI              // Math.PI * 2
+fx.lerp(a, b, k)       // linear interpolate: a + (b - a) * k
+fx.clamp(v, lo, hi)    // constrain v to [lo, hi]
+fx.smooth(k)           // smoothstep ease of k in [0,1] to eased [0,1]</code></pre></div>
+
+    <h2 id="rules">Rules for export</h2>
+    <ul class="bullets">
+      <li><b>Be deterministic.</b> The same <code class="inline">t</code> must always draw the same frame. During export each frame is rendered on its own, so anything time-varying should be a pure function of <code class="inline">t</code>. Avoid <code class="inline">Date.now()</code>, <code class="inline">performance.now()</code>, and unseeded <code class="inline">Math.random()</code>. Seed randomness from an index instead (see the Starfield example).</li>
+      <li><b>t is clip-local.</b> A clip that starts at 0:10 on the timeline still sees <code class="inline">t = 0</code> at its first frame. This keeps effects reusable and drag-independent.</li>
+      <li><b>Work in project pixels.</b> <code class="inline">w</code> and <code class="inline">h</code> are the export resolution, so a script that looks right in the preview looks identical in the render.</li>
+    </ul>
+
+    <h2 id="sandbox">Sandbox limits</h2>
+    <p>Scripts can only draw. There is <b>no</b> network, filesystem, DOM, storage, or access to the editor, by design, so a pasted snippet cannot do anything unsafe. <code class="inline">fetch</code>, <code class="inline">XMLHttpRequest</code>, <code class="inline">WebSocket</code>, <code class="inline">indexedDB</code>, and timers to the host are unavailable.</p>
+    <p>The clip's transform tools still apply on top of your drawing: position, scale, rotation, opacity, keyframes, and transitions all work as they do for any layer.</p>
+
+    <h2 id="examples">Examples</h2>
+<p class="lead">Each example is a complete script. Copy the body into the editor and press apply. They all follow the same rules, so you can mix and layer them freely.</p>
+<div class="ex" id="ex-progress"><h3>1. Progress bar</h3><p>A rounded fill that eases across the frame. Great as a base pattern for loaders and meters.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">progress.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const pad = w * 0.1;
+const barW = w - pad * 2;
+const barH = h * 0.03;
+const y = h * 0.9;
+const p = fx.clamp(t / 4, 0, 1); // fill over 4 seconds
+
+ctx.fillStyle = 'rgba(255,255,255,0.15)';
+ctx.fillRect(pad, y, barW, barH);
+
+ctx.fillStyle = '#3dd6f5';
+ctx.fillRect(pad, y, barW * fx.smooth(p), barH);</code></pre></div></div>
+<div class="ex" id="ex-countdown"><h3>2. Countdown number</h3><p>A centered number that pops on each whole second, deterministic from t.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">countdown.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const remaining = Math.max(0, Math.ceil(5 - t));
+const pop = 1 - (t % 1);            // shrink each second
+const scale = 1 + pop * 0.4;
+
+ctx.save();
+ctx.translate(w / 2, h / 2);
+ctx.scale(scale, scale);
+ctx.fillStyle = '#ffffff';
+ctx.font = '700 ' + Math.round(h * 0.3) + 'px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(String(remaining), 0, 0);
+ctx.restore();</code></pre></div></div>
+<div class="ex" id="ex-line"><h3>3. Animated line chart</h3><p>Reveals a data series left to right with a leading dot on the newest point.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">line.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const data = [0.2, 0.5, 0.35, 0.7, 0.6, 0.9, 0.75, 1.0];
+const pad = w * 0.08;
+const plotW = w - pad * 2;
+const plotH = h * 0.5;
+const baseY = h * 0.8;
+const reveal = fx.clamp(t / 2, 0, 1); // draw left-to-right over 2s
+const shown = reveal * (data.length - 1);
+
+ctx.strokeStyle = '#3dd6f5';
+ctx.lineWidth = 4;
+ctx.lineJoin = 'round';
+ctx.beginPath();
+for (let i = 0; i &lt; data.length; i++) {
+  if (i &gt; shown) break;
+  const x = pad + (plotW * i) / (data.length - 1);
+  const y = baseY - data[i] * plotH;
+  if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+}
+ctx.stroke();
+
+// leading dot
+const li = Math.min(Math.floor(shown), data.length - 1);
+const lx = pad + (plotW * li) / (data.length - 1);
+const ly = baseY - data[li] * plotH;
+ctx.fillStyle = '#fff';
+ctx.beginPath();
+ctx.arc(lx, ly, 6, 0, fx.TWO_PI);
+ctx.fill();</code></pre></div></div>
+<div class="ex" id="ex-polygon"><h3>4. Rotating polygon</h3><p>A stroked hexagon spinning at a steady rate. Change sides for other shapes.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">polygon.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const cx = w / 2, cy = h / 2;
+const r = Math.min(w, h) * 0.25;
+const sides = 6;
+const spin = t * 0.8;
+
+ctx.strokeStyle = '#a678f0';
+ctx.lineWidth = 5;
+ctx.beginPath();
+for (let i = 0; i &lt;= sides; i++) {
+  const a = spin + (i / sides) * fx.TWO_PI;
+  const x = cx + Math.cos(a) * r;
+  const y = cy + Math.sin(a) * r;
+  if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+}
+ctx.closePath();
+ctx.stroke();</code></pre></div></div>
+<div class="ex" id="ex-gradient"><h3>5. Gradient sweep</h3><p>A looping two-color gradient that drifts across the frame as a background.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">gradient.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const shift = (t * 0.15) % 1;
+const g = ctx.createLinearGradient(0, 0, w, h);
+g.addColorStop((0 + shift) % 1, 'rgba(61,214,245,0.6)');
+g.addColorStop((0.5 + shift) % 1, 'rgba(166,120,240,0.6)');
+g.addColorStop((0.999), 'rgba(61,214,245,0.6)');
+ctx.fillStyle = g;
+ctx.fillRect(0, 0, w, h);</code></pre></div></div>
+<div class="ex" id="ex-typewriter"><h3>6. Typewriter title</h3><p>Types a string at a fixed characters-per-second rate with a blinking caret.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">typewriter.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const text = 'VELOX EDITOR';
+const cps = 10; // characters per second
+const n = fx.clamp(Math.floor(t * cps), 0, text.length);
+const shown = text.slice(0, n);
+const caret = (t * 2) % 1 &lt; 0.5 ? '|' : '';
+
+ctx.fillStyle = '#ffffff';
+ctx.font = '600 ' + Math.round(h * 0.08) + 'px monospace';
+ctx.textBaseline = 'middle';
+ctx.fillText(shown + caret, w * 0.1, h * 0.5);</code></pre></div></div>
+<div class="ex" id="ex-ring"><h3>7. Circular progress ring</h3><p>A track plus an eased arc with a live percentage in the middle.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">ring.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const cx = w / 2, cy = h / 2;
+const r = Math.min(w, h) * 0.3;
+const p = fx.smooth(fx.clamp(t / 3, 0, 1));
+
+ctx.lineWidth = 14;
+ctx.lineCap = 'round';
+
+ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+ctx.beginPath();
+ctx.arc(cx, cy, r, 0, fx.TWO_PI);
+ctx.stroke();
+
+ctx.strokeStyle = '#3dd6f5';
+ctx.beginPath();
+ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + fx.TWO_PI * p);
+ctx.stroke();
+
+ctx.fillStyle = '#fff';
+ctx.font = '700 ' + Math.round(h * 0.1) + 'px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(Math.round(p * 100) + '%', cx, cy);</code></pre></div></div>
+<div class="ex" id="ex-eq"><h3>8. Equalizer bars</h3><p>A row of bars driven by a deterministic per-bar wave, so it renders identically every export.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">eq.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const bars = 24;
+const bw = w / bars;
+const baseY = h;
+for (let i = 0; i &lt; bars; i++) {
+  // deterministic per-bar wave
+  const amp = 0.5 + 0.5 * Math.sin(t * 4 + i * 0.6) * Math.sin(t * 1.3 + i);
+  const bh = Math.abs(amp) * h * 0.5;
+  ctx.fillStyle = 'hsl(' + (190 + i * 4) + ', 85%, 60%)';
+  ctx.fillRect(i * bw + 2, baseY - bh, bw - 4, bh);
+}</code></pre></div></div>
+<div class="ex" id="ex-starfield"><h3>9. Starfield (seeded randomness)</h3><p>Uses a seeded pseudo-random function so the field is reproducible across renders. This is the pattern to reach for whenever you need randomness.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">starfield.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>// Pseudo-random from an integer seed. Deterministic across renders.
+function rand(seed) {
+  const x = Math.sin(seed * 127.1) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+const N = 140;
+for (let i = 0; i &lt; N; i++) {
+  const sx = rand(i);
+  const sy = rand(i + 99);
+  const speed = 0.05 + sx * 0.15;
+  const x = ((sx + t * speed) % 1) * w;
+  const y = sy * h;
+  const r = 0.5 + sx * 2;
+  ctx.fillStyle = 'rgba(255,255,255,' + (0.3 + sy * 0.6) + ')';
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, fx.TWO_PI);
+  ctx.fill();
+}</code></pre></div></div>
+<div class="ex" id="ex-ball"><h3>10. Bouncing ball with easing</h3><p>A looping bounce built from fx.smooth, with a subtle squash and stretch.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">ball.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const period = 1.2;
+const phase = (t % period) / period;
+// ease-out up, ease-in down for a bounce
+const up = phase &lt; 0.5
+  ? fx.smooth(phase * 2)
+  : fx.smooth((1 - phase) * 2);
+const cx = w / 2;
+const floor = h * 0.85;
+const top = h * 0.25;
+const cy = fx.lerp(floor, top, up);
+const squash = 1 + (1 - up) * 0.2;
+
+ctx.fillStyle = '#f6ad55';
+ctx.beginPath();
+ctx.ellipse(cx, cy, 40 / squash, 40 * squash, 0, 0, fx.TWO_PI);
+ctx.fill();</code></pre></div></div>
+<div class="ex" id="ex-lower"><h3>11. Lower-third title plate</h3><p>A CSS-style plate that slides in, then fades in its text. Swap the strings for your own titles.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">lower.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const slide = fx.smooth(fx.clamp(t / 0.5, 0, 1));
+const x = w * 0.08, y = h * 0.74;
+const plateW = w * 0.44 * slide;
+const plateH = h * 0.13;
+
+ctx.fillStyle = 'rgba(10,26,31,0.82)';
+ctx.fillRect(x, y, plateW, plateH);
+ctx.fillStyle = '#3dd6f5';
+ctx.fillRect(x, y, 6, plateH);
+
+if (slide &gt; 0.6) {
+  ctx.globalAlpha = fx.clamp((slide - 0.6) / 0.4, 0, 1);
+  ctx.fillStyle = '#fff';
+  ctx.font = '600 ' + Math.round(h * 0.045) + 'px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('YOUR TITLE HERE', x + 22, y + plateH * 0.38);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '400 ' + Math.round(h * 0.028) + 'px sans-serif';
+  ctx.fillText('Subtitle line', x + 22, y + plateH * 0.72);
+  ctx.globalAlpha = 1;
+}</code></pre></div></div>
+<div class="ex" id="ex-pulse"><h3>12. Radial pulse rings</h3><p>Expanding rings that fade as they grow. A clean accent for beats or hits.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">pulse.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const cx = w / 2, cy = h / 2;
+const maxR = Math.hypot(w, h) / 2;
+for (let i = 0; i &lt; 5; i++) {
+  const phase = (t * 0.4 + i / 5) % 1;
+  const r = phase * maxR;
+  ctx.strokeStyle = 'hsla(190,90%,60%,' + (1 - phase) * 0.7 + ')';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, fx.TWO_PI);
+  ctx.stroke();
+}</code></pre></div></div>
+<div class="ex" id="ex-clock"><h3>13. Analog clock hand sweep</h3><p>A dial with ticks and a hand that completes one rotation every four seconds.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">clock.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const cx = w / 2, cy = h / 2;
+const r = Math.min(w, h) * 0.3;
+
+ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+ctx.lineWidth = 3;
+ctx.beginPath();
+ctx.arc(cx, cy, r, 0, fx.TWO_PI);
+ctx.stroke();
+
+// ticks
+for (let i = 0; i &lt; 12; i++) {
+  const a = (i / 12) * fx.TWO_PI;
+  ctx.beginPath();
+  ctx.moveTo(cx + Math.cos(a) * r * 0.9, cy + Math.sin(a) * r * 0.9);
+  ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+  ctx.stroke();
+}
+
+// sweeping hand, one rotation every 4s
+const a = -Math.PI / 2 + (t / 4) * fx.TWO_PI;
+ctx.strokeStyle = '#3dd6f5';
+ctx.lineWidth = 5;
+ctx.lineCap = 'round';
+ctx.beginPath();
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx + Math.cos(a) * r * 0.8, cy + Math.sin(a) * r * 0.8);
+ctx.stroke();</code></pre></div></div>
+<div class="ex" id="ex-grid"><h3>14. Grid / matrix background</h3><p>A drifting grid you can drop behind titles or data for a technical feel.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">grid.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>const cols = 20;
+const cell = w / cols;
+const rows = Math.ceil(h / cell);
+ctx.strokeStyle = 'rgba(61,214,245,0.15)';
+ctx.lineWidth = 1;
+for (let x = 0; x &lt;= cols; x++) {
+  const px = x * cell + (t * 20) % cell; // slow horizontal drift
+  ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+}
+for (let y = 0; y &lt;= rows; y++) {
+  const py = y * cell;
+  ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(w, py); ctx.stroke();
+}</code></pre></div></div>
+<div class="ex" id="ex-vignette"><h3>15. Vignette / frame border</h3><p>A soft dark vignette plus a gently pulsing accent frame to finish a shot.</p><div class="code-card"><div class="code-top"><span class="tl"><i></i><i></i><i></i></span><span class="cname">vignette.fx.js</span><button class="copy" type="button">Copy</button></div><pre><code>// Soft dark vignette around the edges.
+const g = ctx.createRadialGradient(
+  w / 2, h / 2, Math.min(w, h) * 0.3,
+  w / 2, h / 2, Math.max(w, h) * 0.7,
+);
+g.addColorStop(0, 'rgba(0,0,0,0)');
+g.addColorStop(1, 'rgba(0,0,0,0.55)');
+ctx.fillStyle = g;
+ctx.fillRect(0, 0, w, h);
+
+// pulsing accent frame
+const a = 0.3 + 0.2 * Math.sin(t * 3);
+ctx.strokeStyle = 'rgba(61,214,245,' + a + ')';
+ctx.lineWidth = 6;
+ctx.strokeRect(20, 20, w - 40, h - 40);</code></pre></div></div>
+
+
+    <h2 id="tips">Tips &amp; patterns</h2>
+    <ul class="bullets">
+      <li><b>Loop an effect</b> over a period <code class="inline">P</code>: use <code class="inline">t % P</code> (or <code class="inline">(t % P) / P</code> for a 0 to 1 phase). Combine with <code class="inline">fx.smooth</code> for eased loops.</li>
+      <li><b>Fade in over the clip start:</b> <code class="inline">const a = fx.clamp(t / 0.5, 0, 1)</code>, then set <code class="inline">ctx.globalAlpha = a</code>.</li>
+      <li><b>Fade out near the end:</b> pass the clip duration in yourself (for example a constant at the top of your script), or animate the clip's opacity with keyframes.</li>
+      <li><b>Reuse a value:</b> compute expensive constants once at the top. The whole body re-runs every frame, so keep per-frame work lean for long clips.</li>
+      <li><b>Text sizing:</b> base font sizes on <code class="inline">h</code> (for example <code class="inline">h * 0.08</code>) so they scale with the project resolution.</li>
+      <li><b>Colors:</b> <code class="inline">hsl()</code> and <code class="inline">hsla()</code> make it easy to animate hue with <code class="inline">t</code>.</li>
+    </ul>
+
+    <h2 id="reference">Reference: what you can call</h2>
+    <p>Everything on the standard Canvas 2D API is available on <code class="inline">ctx</code>, including <code class="inline">fillRect</code>, <code class="inline">strokeRect</code>, <code class="inline">clearRect</code>, path building with <code class="inline">beginPath</code>, <code class="inline">moveTo</code>, <code class="inline">lineTo</code>, <code class="inline">arc</code>, <code class="inline">ellipse</code>, <code class="inline">bezierCurveTo</code>, <code class="inline">quadraticCurveTo</code>, <code class="inline">closePath</code>, plus <code class="inline">fill</code> and <code class="inline">stroke</code>, the gradient builders <code class="inline">createLinearGradient</code>, <code class="inline">createRadialGradient</code>, and <code class="inline">createConicGradient</code>, text with <code class="inline">fillText</code>, <code class="inline">strokeText</code>, and <code class="inline">measureText</code>, state with <code class="inline">save</code> and <code class="inline">restore</code>, transforms via <code class="inline">translate</code>, <code class="inline">rotate</code>, <code class="inline">scale</code>, and <code class="inline">setTransform</code>, plus <code class="inline">clip</code>, <code class="inline">globalAlpha</code>, <code class="inline">globalCompositeOperation</code>, shadows, and line styling. The full <code class="inline">Math</code> object and the <code class="inline">fx</code> helpers are available too.</p>
+
+    <h2 id="shortcuts">Keyboard shortcuts</h2><p class="lead">Velox is built for a keyboard-first workflow. Press a tool key to switch instantly, scrub with the spacebar and arrows, and drive the whole project without leaving the timeline.</p><div class="callout"><span class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></span><p>On macOS the modifier is <b>Cmd</b>. On Windows and Linux use <b>Ctrl</b> for the same actions.</p></div><div class="sc-grid"><div class="sc-card"><h4>Tools</h4><div class="sc-row"><span class="lab">Select</span><span class="keys"><span class="kbd">V</span></span></div><div class="sc-row"><span class="lab">Razor</span><span class="keys"><span class="kbd">C</span></span></div><div class="sc-row"><span class="lab">Motion tracker</span><span class="keys"><span class="kbd">Y</span></span></div><div class="sc-row"><span class="lab">Color</span><span class="keys"><span class="kbd">E</span></span></div><div class="sc-row"><span class="lab">Crop</span><span class="keys"><span class="kbd">H</span></span></div><div class="sc-row"><span class="lab">Keyframes</span><span class="keys"><span class="kbd">K</span></span></div><div class="sc-row"><span class="lab">Subtitle</span><span class="keys"><span class="kbd">U</span></span></div></div><div class="sc-card"><h4>Playback</h4><div class="sc-row"><span class="lab">Play or pause</span><span class="keys"><span class="kbd">Space</span></span></div><div class="sc-row"><span class="lab">Step one frame back</span><span class="keys"><span class="kbd">&larr;</span></span></div><div class="sc-row"><span class="lab">Step one frame forward</span><span class="keys"><span class="kbd">&rarr;</span></span></div></div><div class="sc-card"><h4>Timeline &amp; zoom</h4><div class="sc-row"><span class="lab">Zoom in</span><span class="keys"><span class="kbd">Ctrl</span><span class="kbd-plus">+</span><span class="kbd">=</span></span></div><div class="sc-row"><span class="lab">Zoom out</span><span class="keys"><span class="kbd">Ctrl</span><span class="kbd-plus">+</span><span class="kbd">-</span></span></div></div><div class="sc-card"><h4>Project</h4><div class="sc-row"><span class="lab">Save</span><span class="keys"><span class="kbd">Cmd</span><span class="kbd-plus">+</span><span class="kbd">S</span></span></div><div class="sc-row"><span class="lab">Open</span><span class="keys"><span class="kbd">Cmd</span><span class="kbd-plus">+</span><span class="kbd">O</span></span></div><div class="sc-row"><span class="lab">Export</span><span class="keys"><span class="kbd">Cmd</span><span class="kbd-plus">+</span><span class="kbd">E</span></span></div><div class="sc-row"><span class="lab">Undo</span><span class="keys"><span class="kbd">Cmd</span><span class="kbd-plus">+</span><span class="kbd">Z</span></span></div><div class="sc-row"><span class="lab">Redo</span><span class="keys"><span class="kbd">Cmd</span><span class="kbd-plus">+</span><span class="kbd">Shift</span><span class="kbd-plus">+</span><span class="kbd">Z</span></span></div></div></div>
+
+  </main>
+</div>
+
+<footer>
+  <div class="foot-in">
+    <span>© 2026 Velox Editor. All rights reserved.</span>
+    <a class="backtop" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Back to top
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5m0 0l-6 6m6-6l6 6"/></svg>
+    </a>
+  </div>
+</footer>
+
+<script>
+// scroll progress
+const prog=document.getElementById('scrollProg');
+addEventListener('scroll',function(){
+  const hh=document.documentElement.scrollHeight-innerHeight;
+  prog.style.width=(hh>0?scrollY/hh*100:0)+'%';
+},{passive:true});
+
+// copy buttons
+document.querySelectorAll('.copy').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    const code=btn.closest('.code-card').querySelector('code').innerText;
+    navigator.clipboard.writeText(code).then(function(){
+      btn.textContent='Copied';btn.classList.add('done');
+      setTimeout(function(){btn.textContent='Copy';btn.classList.remove('done');},1600);
+    }).catch(function(){ btn.textContent='Copy failed'; setTimeout(function(){btn.textContent='Copy';},1600); });
+  });
+});
+
+// scroll-spy TOC
+const links=[].slice.call(document.querySelectorAll('.toc a'));
+const map={};
+links.forEach(function(a){ const id=a.getAttribute('data-t'); const el=document.getElementById(id); if(el) map[id]=a; });
+const targets=Object.keys(map).map(function(id){return document.getElementById(id);});
+const spy=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){
+      links.forEach(function(a){a.classList.remove('active');});
+      const a=map[e.target.id]; if(a){a.classList.add('active'); }
+    }
+  });
+},{rootMargin:'-84px 0px -70% 0px',threshold:0});
+targets.forEach(function(t){spy.observe(t);});
+</script>
+</body>
+</html>
