@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Velox Editor — Program Your Video</title>
+<meta name="description" content="Velox Editor is a professional multi-track video editor with keyframe animation, motion tracking, GPU acceleration, and scriptable clips that let you program custom overlays." />
+<meta name="theme-color" content="#0a0d13" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="mask-icon" href="favicon.svg" color="#45c8ef" />
+<link rel="apple-touch-icon" href="favicon.svg" />
+<!-- fallback for browsers that don't support SVG favicons -->
+<link rel="alternate icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0d13;
+    --bg-2:#0d1119;
+    --panel:#12161f;
+    --panel-2:#161b26;
+    --line:#1e2531;
+    --line-2:#2a3342;
+    --text:#e8eef6;
+    --muted:#8a97a8;
+    --muted-2:#5f6b7c;
+    --cyan:#45c8ef;
+    --cyan-bright:#6dd6f5;
+    --cyan-deep:#2aa3d4;
+    --violet:#7c6cf0;
+    --violet-bright:#9d8dff;
+    --green:#4ade80;
+    --amber:#f5c451;
+    --red:#ff6b6b;
+    --radius:14px;
+    --radius-sm:9px;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --shadow:0 30px 80px -20px rgba(0,0,0,.75);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    line-height:1.6;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:rgba(69,200,239,.28)}
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  /* backdrop glow */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(900px 600px at 78% -5%, rgba(124,108,240,.16), transparent 60%),
+      radial-gradient(1000px 700px at 12% 8%, rgba(69,200,239,.15), transparent 60%),
+      var(--bg);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    background-size:52px 52px;
+    -webkit-mask-image:radial-gradient(ellipse 100% 60% at 50% 0%,#000 20%,transparent 75%);
+    mask-image:radial-gradient(ellipse 100% 60% at 50% 0%,#000 20%,transparent 75%);
+  }
+
+  /* ---------- NAV ---------- */
+  header.nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    transition:all .4s var(--ease);
+    border-bottom:1px solid transparent;
+  }
+  header.nav.scrolled{
+    background:rgba(10,13,19,.82);
+    -webkit-backdrop-filter:blur(16px) saturate(150%);
+    backdrop-filter:blur(16px) saturate(150%);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.14em;font-size:15px}
+  .brand .dot{
+    width:22px;height:22px;border-radius:6px;
+    background:linear-gradient(135deg,var(--cyan),var(--violet));
+    display:grid;place-items:center;box-shadow:0 0 18px rgba(69,200,239,.5);
+  }
+  .brand .dot svg{width:12px;height:12px}
+  .nav-links{display:flex;gap:30px;align-items:center;font-size:14px;color:var(--muted)}
+  .nav-links a{transition:color .2s;position:relative}
+  .nav-links a:hover{color:var(--text)}
+  .nav-cta{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--cyan);color:#04121a;font-weight:700;font-size:13.5px;
+    padding:9px 16px;border-radius:9px;transition:all .25s var(--ease);
+    box-shadow:0 6px 20px -6px rgba(69,200,239,.6);
+  }
+  .nav-cta:hover{background:var(--cyan-bright);transform:translateY(-1px)}
+  @media(max-width:820px){.nav-links{display:none}}
+
+  /* ---------- HERO ---------- */
+  .hero{position:relative;padding:150px 0 60px;text-align:center}
+  .badge{
+    display:inline-flex;align-items:center;gap:9px;
+    background:var(--panel);border:1px solid var(--line-2);
+    padding:6px 14px 6px 8px;border-radius:100px;font-size:12.5px;color:var(--muted);
+    margin-bottom:26px;
+  }
+  .badge .pill{background:linear-gradient(135deg,var(--violet),var(--cyan));color:#fff;font-weight:700;font-size:10.5px;letter-spacing:.05em;padding:3px 9px;border-radius:100px}
+  h1.hero-title{
+    font-size:clamp(40px,7vw,80px);line-height:1.02;font-weight:900;letter-spacing:-.03em;
+    margin-bottom:22px;
+  }
+  h1.hero-title .grad,.grad{
+    background:linear-gradient(110deg,var(--cyan-bright),var(--violet-bright) 75%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .hero-sub{
+    font-size:clamp(16px,2vw,20px);color:var(--muted);max-width:640px;margin:0 auto 38px;
+  }
+  .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;align-items:stretch}
+
+  /* download dropdown */
+  .dl{position:relative}
+  .dl-btn{
+    display:inline-flex;align-items:center;gap:12px;height:54px;padding:0 8px 0 22px;
+    background:linear-gradient(180deg,var(--cyan-bright),var(--cyan-deep));
+    color:#04121a;font-weight:800;font-size:16px;border:none;cursor:pointer;
+    border-radius:12px;box-shadow:0 12px 34px -10px rgba(69,200,239,.7);
+    transition:transform .2s var(--ease),box-shadow .2s;
+  }
+  .dl-btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px -10px rgba(69,200,239,.8)}
+  .dl-btn .split{display:flex;align-items:center;gap:10px}
+  .dl-btn .os-ico{width:19px;height:19px}
+  .dl-btn .caret{
+    width:36px;height:38px;display:grid;place-items:center;border-radius:9px;
+    background:rgba(3,20,28,.16);transition:transform .3s var(--ease);
+  }
+  .dl.open .dl-btn .caret{transform:rotate(180deg)}
+  .dl-menu{
+    position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%) translateY(-8px) scale(.97);
+    width:320px;background:var(--panel);border:1px solid var(--line-2);border-radius:14px;
+    box-shadow:var(--shadow);padding:8px;opacity:0;visibility:hidden;transition:all .28s var(--ease);
+    z-index:40;text-align:left;
+  }
+  .dl.open .dl-menu{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0) scale(1)}
+  .dl-menu .head{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);padding:10px 12px 6px}
+  .dl-item{
+    display:flex;align-items:center;gap:13px;padding:11px 12px;border-radius:9px;cursor:pointer;
+    transition:background .18s;color:var(--text);
+  }
+  .dl-item:hover{background:var(--panel-2)}
+  .dl-item .oi{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:8px;background:var(--bg-2);border:1px solid var(--line)}
+  .dl-item .oi svg{width:17px;height:17px;color:var(--cyan)}
+  .dl-item .t{font-weight:600;font-size:14.5px;line-height:1.2}
+  .dl-item .a{font-size:12px;color:var(--muted-2);font-family:'JetBrains Mono',monospace}
+  .dl-item .arch{margin-left:auto;font-size:11px;color:var(--muted-2);border:1px solid var(--line-2);padding:2px 7px;border-radius:6px}
+
+  .btn-ghost{
+    display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 24px;
+    background:var(--panel);border:1px solid var(--line-2);color:var(--text);
+    font-weight:600;font-size:15px;border-radius:12px;cursor:pointer;transition:all .2s var(--ease);
+  }
+  .btn-ghost:hover{border-color:var(--cyan);color:var(--cyan-bright);background:var(--panel-2)}
+  .btn-ghost svg{width:18px;height:18px}
+  .hero-meta{margin-top:20px;font-size:12.5px;color:var(--muted-2)}
+  .hero-meta b{color:var(--muted)}
+
+  /* hero screenshot */
+  .hero-shot{
+    position:relative;margin:64px auto 0;max-width:1060px;perspective:2000px;
+  }
+  .hero-shot .frame{
+    border-radius:16px;overflow:hidden;border:1px solid var(--line-2);
+    box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.02);
+    transform:rotateX(12deg) scale(.98);transform-origin:center top;
+    transition:transform .1s linear;background:var(--panel);
+  }
+  .hero-shot .frame img{width:100%}
+  .hero-shot .glow{
+    position:absolute;inset:-40px;z-index:-1;border-radius:30px;
+    background:radial-gradient(closest-side,rgba(69,200,239,.28),transparent 70%),radial-gradient(closest-side,rgba(124,108,240,.24),transparent 70%);
+    filter:blur(30px);
+  }
+  .float-chip{
+    position:absolute;background:rgba(18,22,31,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    border:1px solid var(--line-2);border-radius:11px;padding:10px 14px;font-size:13px;
+    display:flex;align-items:center;gap:9px;box-shadow:0 12px 30px -12px rgba(0,0,0,.7);
+    animation:floaty 5s ease-in-out infinite;
+  }
+  .float-chip .ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none}
+  .float-chip b{font-weight:600}
+  .float-chip small{display:block;color:var(--muted-2);font-size:11px}
+  .fc-1{top:16%;left:-40px;animation-delay:0s}
+  .fc-2{top:52%;right:-46px;animation-delay:1.2s}
+  .fc-3{bottom:8%;left:6%;animation-delay:2.4s}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  @media(max-width:900px){.float-chip{display:none}.hero-shot .frame{transform:none}}
+
+  /* ---------- TECH STRIP ---------- */
+  .strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:80px;background:rgba(13,17,25,.5)}
+  .strip-inner{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;padding:22px 24px;align-items:center}
+  .strip-inner .lbl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);margin-right:8px}
+  .tech{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:7px 13px;border-radius:8px}
+  .tech .d{width:7px;height:7px;border-radius:50%}
+
+  /* ---------- SECTIONS ---------- */
+  section{position:relative}
+  .sec-pad{padding:110px 0}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:16px}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--cyan);opacity:.7}
+  h2.sec-title{font-size:clamp(30px,4.4vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1.08}
+  .sec-lead{color:var(--muted);font-size:clamp(15px,1.7vw,18px);max-width:620px;margin-top:16px}
+  .center{text-align:center}
+  .center .eyebrow::before{display:none}
+  .center .eyebrow{justify-content:center}
+  .center .sec-lead{margin-left:auto;margin-right:auto}
+
+  /* playhead divider */
+  .playhead{position:relative;height:1px;background:var(--line);margin:0 auto;max-width:1200px}
+  .playhead::before{
+    content:"";position:absolute;top:-4px;left:var(--ph,20%);width:9px;height:9px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 12px var(--cyan);transform:translateX(-50%);transition:left .1s linear;
+  }
+  .playhead::after{content:"";position:absolute;top:0;left:0;width:var(--ph,20%);height:1px;background:linear-gradient(90deg,transparent,var(--cyan));transition:width .1s linear}
+
+  /* ---------- HEADLINE: SCRIPTABLE CLIPS ---------- */
+  .headline{background:
+      radial-gradient(700px 400px at 85% 20%,rgba(124,108,240,.12),transparent 65%),
+      linear-gradient(180deg,transparent,rgba(124,108,240,.04),transparent)}
+  .script-grid{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center;margin-top:52px}
+  @media(max-width:920px){.script-grid{grid-template-columns:1fr;gap:28px}}
+  .code-card{
+    background:#0b0f16;border:1px solid var(--line-2);border-radius:14px;overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  .code-top{display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .code-top .tl{display:flex;gap:6px}
+  .code-top .tl i{width:11px;height:11px;border-radius:50%;display:block}
+  .code-top .name{margin-left:8px;font-size:12.5px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .code-top .tag{margin-left:auto;font-size:10.5px;color:var(--violet-bright);border:1px solid rgba(124,108,240,.4);padding:2px 8px;border-radius:6px;background:rgba(124,108,240,.1)}
+  .code-body{padding:16px 18px;font-family:'JetBrains Mono',monospace;font-size:12.8px;line-height:1.85;overflow-x:auto}
+  .code-body .ln{white-space:pre;color:#c8d3e0}
+  .c-com{color:#5f6b7c}
+  .c-key{color:#9d8dff}
+  .c-fn{color:#45c8ef}
+  .c-num{color:#f5c451}
+  .c-str{color:#4ade80}
+
+  .demo-card{
+    background:var(--panel);border:1px solid var(--line-2);border-radius:14px;padding:16px;box-shadow:var(--shadow);
+  }
+  .demo-canvas-wrap{
+    position:relative;border-radius:10px;overflow:hidden;
+    background:
+      repeating-conic-gradient(#141922 0% 25%, #0e131b 0% 50%) 0 0 / 24px 24px;
+    aspect-ratio:16/10;
+  }
+  #fxCanvas{width:100%;height:100%;display:block}
+  .demo-controls{display:flex;align-items:center;gap:12px;margin-top:14px;padding:0 4px}
+  .demo-controls .play{
+    width:38px;height:38px;border-radius:9px;border:1px solid var(--line-2);background:var(--bg-2);
+    display:grid;place-items:center;cursor:pointer;color:var(--cyan);transition:all .2s;flex:none;
+  }
+  .demo-controls .play:hover{border-color:var(--cyan);background:var(--panel-2)}
+  .demo-controls .track{flex:1;height:5px;border-radius:5px;background:var(--line);position:relative;overflow:hidden}
+  .demo-controls .track .fill{position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:5px}
+  .demo-presets{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .preset{
+    font-size:12.5px;padding:7px 13px;border-radius:8px;border:1px solid var(--line-2);
+    background:var(--bg-2);color:var(--muted);cursor:pointer;transition:all .2s;font-family:'JetBrains Mono',monospace;
+  }
+  .preset:hover{color:var(--text)}
+  .preset.active{background:rgba(124,108,240,.15);border-color:var(--violet);color:var(--violet-bright)}
+  .demo-note{font-size:11.5px;color:var(--muted-2);margin-top:12px;text-align:center}
+
+  /* ---------- ALTERNATING FEATURE ROWS ---------- */
+  .frow{display:grid;grid-template-columns:1fr 1.15fr;gap:56px;align-items:center;padding:64px 0}
+  .frow.rev{grid-template-columns:1.15fr 1fr}
+  .frow.rev .ftext{order:2}
+  .frow.rev .fshot{order:1}
+  @media(max-width:920px){.frow,.frow.rev{grid-template-columns:1fr;gap:26px}.frow.rev .ftext,.frow.rev .fshot{order:unset}}
+  .ftext h3{font-size:clamp(24px,3vw,32px);font-weight:800;letter-spacing:-.02em;margin-bottom:14px}
+  .ftext p{color:var(--muted);font-size:16px}
+  .fchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .fchips span{font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:100px}
+  .fchips span b{color:var(--cyan);font-weight:600}
+  .fshot{position:relative}
+  .fshot .frame{
+    position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line-2);
+    box-shadow:0 24px 60px -24px rgba(0,0,0,.8);transition:transform .5s var(--ease),box-shadow .5s;
+  }
+  .fshot .frame:hover{transform:translateY(-6px);box-shadow:0 34px 70px -24px rgba(0,0,0,.85)}
+  .fshot .frame::after{content:"";position:absolute;inset:0;border-radius:14px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);pointer-events:none}
+  .fshot .kicker{
+    position:absolute;top:-14px;left:22px;background:var(--panel);border:1px solid var(--line-2);
+    border-radius:8px;padding:6px 12px;font-size:11.5px;font-family:'JetBrains Mono',monospace;color:var(--cyan);
+    box-shadow:0 8px 20px -8px rgba(0,0,0,.6);z-index:2;
+  }
+
+  /* ---------- FEATURE GRID ---------- */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:52px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:24px;
+    position:relative;overflow:hidden;transition:all .3s var(--ease);
+  }
+  .card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--violet));transform:scaleX(0);transform-origin:left;transition:transform .4s var(--ease)}
+  .card:hover{border-color:var(--line-2);transform:translateY(-4px);background:var(--panel-2)}
+  .card:hover::before{transform:scaleX(1)}
+  .card .ci{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;background:var(--bg-2);border:1px solid var(--line-2)}
+  .card .ci svg{width:21px;height:21px;color:var(--cyan)}
+  .card h4{font-size:16.5px;font-weight:700;margin-bottom:7px}
+  .card p{font-size:13.8px;color:var(--muted);line-height:1.55}
+
+  /* ---------- DOWNLOAD CTA ---------- */
+  .cta{margin:40px auto 0;max-width:980px;padding:56px 40px;text-align:center;position:relative;
+    background:linear-gradient(180deg,var(--panel),var(--bg-2));border:1px solid var(--line-2);border-radius:22px;overflow:hidden}
+  .cta::before{content:"";position:absolute;inset:0;z-index:0;
+    background:radial-gradient(600px 300px at 50% -20%,rgba(69,200,239,.2),transparent 70%),radial-gradient(500px 260px at 80% 120%,rgba(124,108,240,.18),transparent 70%)}
+  .cta > *{position:relative;z-index:1}
+  .cta h2{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-.02em;margin-bottom:14px}
+  .cta p{color:var(--muted);margin-bottom:30px;max-width:520px;margin-left:auto;margin-right:auto}
+
+  /* platform pills row */
+  .plat-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+  .plat-row a{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);
+    background:var(--bg-2);border:1px solid var(--line);padding:8px 14px;border-radius:9px;transition:all .2s;cursor:pointer}
+  .plat-row a:hover{color:var(--text);border-color:var(--cyan)}
+  .plat-row a svg{width:15px;height:15px;fill:currentColor}
+
+  /* ---------- FOOTER ---------- */
+  footer{border-top:1px solid var(--line);margin-top:110px;padding:54px 0 40px;background:var(--bg-2)}
+  .foot-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;padding-bottom:34px;border-bottom:1px solid var(--line)}
+  .foot-brand{max-width:300px}
+  .foot-brand .brand{margin-bottom:14px;font-size:16px}
+  .foot-brand p{font-size:13.5px;color:var(--muted)}
+  .foot-cols{display:flex;gap:60px;flex-wrap:wrap}
+  .foot-col h5{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);margin-bottom:14px}
+  .foot-col a{display:block;font-size:14px;color:var(--muted);margin-bottom:10px;transition:color .2s;cursor:pointer}
+  .foot-col a:hover{color:var(--cyan)}
+  .foot-bot{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-top:26px;font-size:13px;color:var(--muted-2)}
+
+  /* reveal animation */
+  .reveal{opacity:0;transform:translateY(34px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}.reveal.d5{transition-delay:.4s}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.float-chip{animation:none}}
+
+  /* scroll progress */
+  .scroll-prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet));z-index:200;box-shadow:0 0 10px var(--cyan)}
+</style>
+</head>
+<body>
+
+<div class="scroll-prog" id="scrollProg"></div>
+
+<!-- ===== NAV ===== -->
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand">
+      <span class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4l14 8L6 20V4z" fill="#04121a"/></svg></span>
+      VELOX
+    </a>
+    <nav class="nav-links">
+      <a href="#scriptable">Scriptable Clips</a>
+      <a href="#features">Features</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#everything">Everything</a>
+      <a href="#docs-link" id="navDocs">Docs</a>
+    </nav>
+    <a href="#download" class="nav-cta">
+      <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#04121a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Download
+    </a>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<span id="top"></span>
+<section class="hero">
+  <div class="wrap">
+    <div class="badge reveal in">
+      <span class="pill">NEW</span>
+      Scriptable clips — program overlays right on the timeline
+    </div>
+    <h1 class="hero-title reveal in d1">
+      The video editor that<br><span class="grad">speaks your language</span>
+    </h1>
+    <p class="hero-sub reveal in d2">
+      Velox Editor pairs a fast multi-track timeline with keyframe animation, motion tracking,
+      GPU-accelerated export, and clips you can <b style="color:var(--text)">program</b> — animated graphs,
+      live data, custom graphics, rendered straight into your video.
+    </p>
+
+    <div class="hero-actions reveal in d3">
+      <!-- DOWNLOAD DROPDOWN -->
+      <div class="dl" id="dl">
+        <button class="dl-btn" id="dlBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="split">
+            <svg class="os-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.1 1.2-.4 2.4-1.1 3.2-.7.9-1.9 1.6-3 1.5-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.5 3-1.6zM19 17.4c-.6 1.3-.9 1.9-1.6 3-1 1.6-2.5 3.6-4.3 3.6-1.6 0-2-1-4.2-1-2.1 0-2.6 1-4.2 1-1.8 0-3.2-1.8-4.2-3.4C-.6 17.4-.9 12 1.3 9.1 2.4 7.6 4.1 6.7 5.7 6.7c1.7 0 2.7 1 4.1 1 1.3 0 2.1-1 4.1-1 1.4 0 3 .8 4 2.1-3.6 2-3 7.1.1 8.6z"/></svg>
+            <span id="dlLabel">Download for macOS</span>
+          </span>
+          <span class="caret"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M6 9l6 6 6-6" stroke="#04121a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <div class="dl-menu" id="dlMenu" role="menu">
+          <div class="head">Choose your platform</div>
+          <a class="dl-item" data-dl="macos-arm" role="menuitem">
+            <span class="oi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.1 1.2-.4 2.4-1.1 3.2-.7.9-1.9 1.6-3 1.5-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.5 3-1.6zM19 17.4c-.6 1.3-.9 1.9-1.6 3-1 1.6-2.5 3.6-4.3 3.6-1.6 0-2-1-4.2-1-2.1 0-2.6 1-4.2 1-1.8 0-3.2-1.8-4.2-3.4C-.6 17.4-.9 12 1.3 9.1 2.4 7.6 4.1 6.7 5.7 6.7c1.7 0 2.7 1 4.1 1 1.3 0 2.1-1 4.1-1 1.4 0 3 .8 4 2.1-3.6 2-3 7.1.1 8.6z"/></svg></span>
+            <span><span class="t">macOS</span><span class="a">Apple Silicon</span></span>
+            <span class="arch">arm64</span>
+          </a>
+          <a class="dl-item" data-dl="macos-intel" role="menuitem">
+            <span class="oi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.1 1.2-.4 2.4-1.1 3.2-.7.9-1.9 1.6-3 1.5-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.5 3-1.6zM19 17.4c-.6 1.3-.9 1.9-1.6 3-1 1.6-2.5 3.6-4.3 3.6-1.6 0-2-1-4.2-1-2.1 0-2.6 1-4.2 1-1.8 0-3.2-1.8-4.2-3.4C-.6 17.4-.9 12 1.3 9.1 2.4 7.6 4.1 6.7 5.7 6.7c1.7 0 2.7 1 4.1 1 1.3 0 2.1-1 4.1-1 1.4 0 3 .8 4 2.1-3.6 2-3 7.1.1 8.6z"/></svg></span>
+            <span><span class="t">macOS</span><span class="a">Intel</span></span>
+            <span class="arch">x86_64</span>
+          </a>
+          <a class="dl-item" data-dl="windows" role="menuitem">
+            <span class="oi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5l7.5-1v7.2H3V5.5zm0 13l7.5 1v-7.1H3v6.1zM11.5 4.3L21 3v8.7h-9.5V4.3zm0 15.4L21 21v-8.6h-9.5v7.3z"/></svg></span>
+            <span><span class="t">Windows</span><span class="a">10 / 11</span></span>
+            <span class="arch">x86_64</span>
+          </a>
+          <a class="dl-item" data-dl="linux" role="menuitem">
+            <span class="oi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-2 0-3 1.7-3 3.6 0 1.3.1 2.3-.6 3.4-.8 1.2-2.4 2.6-2.4 5.3 0 .9.3 1.6.3 2.4-.4.5-1.3 1-1.3 1.8 0 1.1 1.4 1.3 2.6 1.6 1.1.3 1.9 1 3 1.1.4 0 .8 0 1.2-.1.9.2 1.9.2 2.8-.1 1-.2 1.7-.8 2.7-1 1.2-.3 2.5-.5 2.5-1.6 0-.8-.8-1.3-1.2-1.8.1-.8.3-1.5.3-2.3 0-2.7-1.6-4.1-2.4-5.3-.7-1.1-.6-2.1-.6-3.4C15 3.7 14 2 12 2z"/></svg></span>
+            <span><span class="t">Linux</span><span class="a">AppImage / deb</span></span>
+            <span class="arch">x86_64</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- DOCS BUTTON -->
+      <a class="btn-ghost" id="docsBtn" href="#docs-link">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 5a2 2 0 012-2h8l6 6v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.7"/><path d="M14 3v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        Documentation
+      </a>
+    </div>
+    <div class="hero-meta reveal in d4">Free to try · <b>macOS</b>, <b>Windows</b> &amp; <b>Linux</b> · GPU accelerated</div>
+  </div>
+
+  <!-- hero screenshot -->
+  <div class="wrap">
+    <div class="hero-shot reveal in d3">
+      <div class="glow"></div>
+      <div class="frame" id="heroFrame">
+        <img src="image4.webp" alt="Velox Editor timeline with transitions panel" loading="eager" />
+      </div>
+      <div class="float-chip fc-1">
+        <span class="ic" style="background:rgba(124,108,240,.2)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#9d8dff" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m0 8v3a2 2 0 002 2h3m8-18h3a2 2 0 012 2v3m0 8v3a2 2 0 01-2 2h-3"/></svg></span>
+        <span><b>Script FX</b><small>sandboxed canvas</small></span>
+      </div>
+      <div class="float-chip fc-2">
+        <span class="ic" style="background:rgba(69,200,239,.2)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#45c8ef" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span>
+        <span><b>Keyframes</b><small>cubic-bezier easing</small></span>
+      </div>
+      <div class="float-chip fc-3">
+        <span class="ic" style="background:rgba(74,222,128,.18)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#4ade80" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+        <span><b>GPU export</b><small>VideoToolbox · NVENC</small></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TECH STRIP ===== -->
+<div class="strip">
+  <div class="wrap strip-inner">
+    <span class="lbl">Built for pros</span>
+    <span class="tech"><span class="d" style="background:var(--cyan)"></span>ffprobe media import</span>
+    <span class="tech"><span class="d" style="background:var(--violet)"></span>Whisper speech-to-text</span>
+    <span class="tech"><span class="d" style="background:var(--green)"></span>MP4 · WebM · MOV</span>
+    <span class="tech"><span class="d" style="background:var(--amber)"></span>VideoToolbox · NVENC · VA-API · QSV · AMF</span>
+    <span class="tech"><span class="d" style="background:var(--cyan)"></span>Frame-accurate seeking</span>
+  </div>
+</div>
+
+<!-- ===== HEADLINE: SCRIPTABLE CLIPS ===== -->
+<section class="sec-pad headline" id="scriptable">
+  <div class="wrap">
+    <div class="center">
+      <span class="eyebrow reveal">Headline feature</span>
+      <h2 class="sec-title reveal d1">Clips you can <span class="grad">program</span></h2>
+      <p class="sec-lead reveal d2">
+        Drop a <b style="color:var(--text)">Script FX</b> clip on the timeline and write JavaScript against a sandboxed canvas.
+        Animated bar graphs, live waveforms, lower-thirds, data-driven overlays — authored in the editor and rendered
+        frame-for-frame into your export. Try it live:
+      </p>
+    </div>
+
+    <div class="script-grid">
+      <!-- code -->
+      <div class="code-card reveal">
+        <div class="code-top">
+          <span class="tl"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span>
+          <span class="name" id="codeName">bar-graph.fx.js</span>
+          <span class="tag">sandboxed</span>
+        </div>
+        <div class="code-body" id="codeBody"></div>
+      </div>
+
+      <!-- live demo -->
+      <div class="demo-card reveal d2">
+        <div class="demo-canvas-wrap">
+          <canvas id="fxCanvas" width="640" height="400"></canvas>
+        </div>
+        <div class="demo-controls">
+          <button class="play" id="fxPlay" aria-label="Play/pause">
+            <svg id="fxPlayIco" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          </button>
+          <div class="track"><div class="fill" id="fxFill"></div></div>
+          <span class="mono" style="font-size:12px;color:var(--muted)" id="fxTime">1.8s</span>
+        </div>
+        <div class="demo-presets">
+          <button class="preset active" data-fx="bars">Bar graph</button>
+          <button class="preset" data-fx="wave">Waveform</button>
+          <button class="preset" data-fx="pulse">Radial pulse</button>
+        </div>
+        <div class="demo-note">Runs in a sandboxed worker — no network, no DOM access.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="playhead" id="ph1"></div>
+
+<!-- ===== FEATURE ROWS ===== -->
+<section class="sec-pad" id="features" style="padding-top:80px">
+  <div class="wrap">
+    <div class="center" style="margin-bottom:10px">
+      <span class="eyebrow reveal">The toolkit</span>
+      <h2 class="sec-title reveal d1">Everything a finishing timeline needs</h2>
+    </div>
+
+    <!-- Timeline -->
+    <div class="frow">
+      <div class="ftext reveal">
+        <h3>A multi-track timeline that keeps up</h3>
+        <p>Video, audio, image, and text tracks with drag-and-drop from the source media panel. Real-time preview with frame-accurate seeking, snap alignment, and a full undo/redo history of your project state.</p>
+        <div class="fchips">
+          <span><b>Drag</b> &amp; drop media</span>
+          <span><b>Snap</b> alignment</span>
+          <span><b>Undo</b> / redo history</span>
+          <span><b>Autosave</b> recovery</span>
+        </div>
+      </div>
+      <div class="fshot reveal d1">
+        <span class="kicker">// timeline</span>
+        <div class="frame"><img src="image9.webp" alt="Velox multi-track timeline with subtitles and text" loading="lazy" /></div>
+      </div>
+    </div>
+
+    <!-- Keyframes / transform -->
+    <div class="frow rev">
+      <div class="ftext reveal">
+        <h3>Keyframe animation with real curves</h3>
+        <p>Animate position, scale, rotation, and opacity per property. Shape motion with a visual cubic-bezier editor, drop keyframes at the playhead, and reshape the easing curve by dragging bezier handles.</p>
+        <div class="fchips">
+          <span><b>Position</b> · scale · rotation</span>
+          <span><b>Opacity</b> curves</span>
+          <span><b>Cubic-bezier</b> easing</span>
+        </div>
+      </div>
+      <div class="fshot reveal d1">
+        <span class="kicker">// keyframe editor</span>
+        <div class="frame"><img src="image6.webp" alt="Keyframe editor showing transform animation curves" loading="lazy" /></div>
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="frow">
+      <div class="ftext reveal">
+        <h3>Color correction &amp; chroma key</h3>
+        <p>Dial temperature, tint, brightness, contrast, saturation, highlights and shadows with a live preview. Pull clean green/blue-screen composites with similarity, smoothness, and spill-suppression controls.</p>
+        <div class="fchips">
+          <span><b>7-way</b> color</span>
+          <span><b>Chroma</b> key</span>
+          <span><b>Spill</b> suppression</span>
+          <span><b>Non-destructive</b> crop</span>
+        </div>
+      </div>
+      <div class="fshot reveal d1">
+        <span class="kicker">// color filter</span>
+        <div class="frame"><img src="image7.webp" alt="Color filter panel with light and colour controls" loading="lazy" /></div>
+      </div>
+    </div>
+
+    <!-- Motion tracking -->
+    <div class="frow rev">
+      <div class="ftext reveal">
+        <h3>Motion tracking that writes keyframes</h3>
+        <p>Set a region and Velox runs SSD template matching to follow your subject, then bakes the result into position keyframes you can attach to any layer — text, graphics, or a blurred cover-up.</p>
+        <div class="fchips">
+          <span><b>SSD</b> template match</span>
+          <span><b>Auto</b> keyframes</span>
+          <span><b>Track</b> against composite</span>
+        </div>
+      </div>
+      <div class="fshot reveal d1">
+        <span class="kicker">// motion tracker</span>
+        <div class="frame"><img src="image5.webp" alt="Motion tracker analysing a clip region" loading="lazy" /></div>
+      </div>
+    </div>
+
+    <!-- Subtitles -->
+    <div class="frow">
+      <div class="ftext reveal">
+        <h3>Subtitles from speech, automatically</h3>
+        <p>Whisper-based transcription generates subtitle tracks in a click — pick a language, set a confidence floor, choose a target track. Then style titles with full font, weight, alignment and bounding-box control.</p>
+        <div class="fchips">
+          <span><b>Whisper</b> STT</span>
+          <span><b>Multi-language</b></span>
+          <span><b>Titles</b> &amp; text styling</span>
+        </div>
+      </div>
+      <div class="fshot reveal d1">
+        <span class="kicker">// auto subtitles</span>
+        <div class="frame"><img src="image8.webp" alt="Auto subtitle generator dialog" loading="lazy" /></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="playhead" id="ph2"></div>
+
+<!-- ===== WORKFLOW / TRANSITIONS + FADE ===== -->
+<section class="sec-pad" id="workflow" style="padding-top:80px">
+  <div class="wrap">
+    <div class="center" style="margin-bottom:8px">
+      <span class="eyebrow reveal">Motion &amp; polish</span>
+      <h2 class="sec-title reveal d1">Transitions and fades, tuned by hand</h2>
+      <p class="sec-lead reveal d2">Drag in fade, slide, zoom, and wipe transitions with directional control — then fine-tune fade-in and fade-out curves in a visual cubic-bezier editor.</p>
+    </div>
+    <div class="frow" style="padding-bottom:0">
+      <div class="fshot reveal">
+        <span class="kicker">// transitions</span>
+        <div class="frame"><img src="image4.webp" alt="Transitions panel with fade, slide, zoom and wipe" loading="lazy" /></div>
+      </div>
+      <div class="fshot reveal d1">
+        <span class="kicker">// fade editor</span>
+        <div class="frame"><img src="image10.webp" alt="Fade-in editor with cubic-bezier curve" loading="lazy" /></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== EVERYTHING GRID ===== -->
+<section class="sec-pad" id="everything">
+  <div class="wrap">
+    <div class="center">
+      <span class="eyebrow reveal">The full picture</span>
+      <h2 class="sec-title reveal d1">Everything in Velox Editor</h2>
+      <p class="sec-lead reveal d2">One application, from import to a hardware-accelerated final render.</p>
+    </div>
+    <div class="grid">
+      <div class="card reveal">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/><path d="M4 9h16M9 4v16"/></svg></div>
+        <h4>Multi-track timeline</h4>
+        <p>Video, audio, image and text tracks with drag-and-drop from the source media panel.</p>
+      </div>
+      <div class="card reveal d1">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg></div>
+        <h4>Smart media import</h4>
+        <p>ffprobe-driven import that auto-transcodes yuvj420p, 10-bit and full-range for browser-safe preview.</p>
+      </div>
+      <div class="card reveal d2">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l14 8L6 20V4z"/></svg></div>
+        <h4>Real-time playback</h4>
+        <p>Frame-accurate seeking with keyboard shortcuts for scrubbing, play, and tool switching.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><rect x="4" y="15" width="16" height="6" rx="1"/></svg></div>
+        <h4>Transform &amp; keyframes</h4>
+        <p>Position, scale, rotation and opacity with per-property keyframes and cubic-bezier easing.</p>
+      </div>
+      <div class="card reveal d1">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg></div>
+        <h4>Color correction</h4>
+        <p>Temperature, tint, brightness, contrast, saturation, highlights and shadows.</p>
+      </div>
+      <div class="card reveal d2">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M8 8l8 8M16 8l-8 8"/></svg></div>
+        <h4>Chroma key</h4>
+        <p>Green/blue screen with similarity, smoothness and spill-suppression controls.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4H5a1 1 0 00-1 1v3m16 0V5a1 1 0 00-1-1h-3m0 16h3a1 1 0 001-1v-3M4 16v3a1 1 0 001 1h3"/></svg></div>
+        <h4>Non-destructive crop</h4>
+        <p>Per-edge cropping that never touches your source footage.</p>
+      </div>
+      <div class="card reveal d1">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
+        <h4>Motion tracking</h4>
+        <p>SSD template matching that generates position keyframes from tracked motion.</p>
+      </div>
+      <div class="card reveal d2">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h7"/><path d="M17 15l3 3-3 3"/></svg></div>
+        <h4>Text &amp; titles</h4>
+        <p>Font family, bold/italic/underline, alignment and bounding-box control.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h4m4 0h2"/></svg></div>
+        <h4>Speech-to-text</h4>
+        <p>Whisper-based transcription for fast, automatic subtitle generation.</p>
+      </div>
+      <div class="card reveal d1">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></div>
+        <h4>Flexible export</h4>
+        <p>MP4, WebM and MOV with configurable resolution, frame rate and bitrate.</p>
+      </div>
+      <div class="card reveal d2">
+        <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M4 10H2m20 0h-2M4 14H2m20 0h-2M10 4V2m4 2V2M10 22v-2m4 2v-2"/></svg></div>
+        <h4>GPU acceleration</h4>
+        <p>Auto-detects VideoToolbox, NVENC, VA-API, QSV and AMF with a CPU fallback ladder.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DOWNLOAD CTA ===== -->
+<section class="sec-pad" id="download" style="padding-bottom:20px">
+  <div class="wrap">
+    <div class="cta reveal">
+      <h2>Ready to edit at velocity?</h2>
+      <p>Download Velox Editor for your platform and drop your first Script FX clip on the timeline today.</p>
+      <div class="hero-actions">
+        <div class="dl" id="dl2">
+          <button class="dl-btn" id="dlBtn2" aria-haspopup="true" aria-expanded="false">
+            <span class="split">
+              <svg class="os-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.1 1.2-.4 2.4-1.1 3.2-.7.9-1.9 1.6-3 1.5-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.5 3-1.6zM19 17.4c-.6 1.3-.9 1.9-1.6 3-1 1.6-2.5 3.6-4.3 3.6-1.6 0-2-1-4.2-1-2.1 0-2.6 1-4.2 1-1.8 0-3.2-1.8-4.2-3.4C-.6 17.4-.9 12 1.3 9.1 2.4 7.6 4.1 6.7 5.7 6.7c1.7 0 2.7 1 4.1 1 1.3 0 2.1-1 4.1-1 1.4 0 3 .8 4 2.1-3.6 2-3 7.1.1 8.6z"/></svg>
+              <span>Download Velox</span>
+            </span>
+            <span class="caret"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M6 9l6 6 6-6" stroke="#04121a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+          <div class="dl-menu" id="dlMenu2" role="menu">
+            <div class="head">Choose your platform</div>
+            <a class="dl-item" data-dl="macos-arm" role="menuitem"><span class="oi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.1 1.2-.4 2.4-1.1 3.2-.7.9-1.9 1.6-3 1.5-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.5 3-1.6zM19 17.4c-.6 1.3-.9 1.9-1.6 3-1 1.6-2.5 3.6-4.3 3.6-1.6 0-2-1-4.2-1-2.1 0-2.6 1-4.2 1-1.8 0-3.2-1.8-4.2-3.4C-.6 17.4-.9 12 1.3 9.1 2.4 7.6 4.1 6.7 5.7 6.7c1.7 0 2.7 1 4.1 1 1.3 0 2.1-1 4.1-1 1.4 0 3 .8 4 2.1-3.6 2-3 7.1.1 8.6z"/></svg></span><span><span class="t">macOS</span><span class="a">Apple Silicon</span></span><span class="arch">arm64</span></a>
+            <a class="dl-item" data-dl="macos-intel" role="menuitem"><span class="oi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.1 1.2-.4 2.4-1.1 3.2-.7.9-1.9 1.6-3 1.5-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.5 3-1.6zM19 17.4c-.6 1.3-.9 1.9-1.6 3-1 1.6-2.5 3.6-4.3 3.6-1.6 0-2-1-4.2-1-2.1 0-2.6 1-4.2 1-1.8 0-3.2-1.8-4.2-3.4C-.6 17.4-.9 12 1.3 9.1 2.4 7.6 4.1 6.7 5.7 6.7c1.7 0 2.7 1 4.1 1 1.3 0 2.1-1 4.1-1 1.4 0 3 .8 4 2.1-3.6 2-3 7.1.1 8.6z"/></svg></span><span><span class="t">macOS</span><span class="a">Intel</span></span><span class="arch">x86_64</span></a>
+            <a class="dl-item" data-dl="windows" role="menuitem"><span class="oi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5l7.5-1v7.2H3V5.5zm0 13l7.5 1v-7.1H3v6.1zM11.5 4.3L21 3v8.7h-9.5V4.3zm0 15.4L21 21v-8.6h-9.5v7.3z"/></svg></span><span><span class="t">Windows</span><span class="a">10 / 11</span></span><span class="arch">x86_64</span></a>
+            <a class="dl-item" data-dl="linux" role="menuitem"><span class="oi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-2 0-3 1.7-3 3.6 0 1.3.1 2.3-.6 3.4-.8 1.2-2.4 2.6-2.4 5.3 0 .9.3 1.6.3 2.4-.4.5-1.3 1-1.3 1.8 0 1.1 1.4 1.3 2.6 1.6 1.1.3 1.9 1 3 1.1.4 0 .8 0 1.2-.1.9.2 1.9.2 2.8-.1 1-.2 1.7-.8 2.7-1 1.2-.3 2.5-.5 2.5-1.6 0-.8-.8-1.3-1.2-1.8.1-.8.3-1.5.3-2.3 0-2.7-1.6-4.1-2.4-5.3-.7-1.1-.6-2.1-.6-3.4C15 3.7 14 2 12 2z"/></svg></span><span><span class="t">Linux</span><span class="a">AppImage / deb</span></span><span class="arch">x86_64</span></a>
+          </div>
+        </div>
+        <a class="btn-ghost" id="docsBtn2" href="#docs-link">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 5a2 2 0 012-2h8l6 6v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.7"/><path d="M14 3v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          Read the docs
+        </a>
+      </div>
+      <div class="plat-row">
+        <a data-dl="macos-arm"><svg viewBox="0 0 24 24"><path d="M16.5 3c.1 1.2-.4 2.4-1.1 3.2-.7.9-1.9 1.6-3 1.5-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.5 3-1.6zM19 17.4c-.6 1.3-.9 1.9-1.6 3-1 1.6-2.5 3.6-4.3 3.6-1.6 0-2-1-4.2-1-2.1 0-2.6 1-4.2 1-1.8 0-3.2-1.8-4.2-3.4C-.6 17.4-.9 12 1.3 9.1 2.4 7.6 4.1 6.7 5.7 6.7c1.7 0 2.7 1 4.1 1 1.3 0 2.1-1 4.1-1 1.4 0 3 .8 4 2.1-3.6 2-3 7.1.1 8.6z"/></svg>macOS · Apple Silicon</a>
+        <a data-dl="macos-intel"><svg viewBox="0 0 24 24"><path d="M16.5 3c.1 1.2-.4 2.4-1.1 3.2-.7.9-1.9 1.6-3 1.5-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.5 3-1.6zM19 17.4c-.6 1.3-.9 1.9-1.6 3-1 1.6-2.5 3.6-4.3 3.6-1.6 0-2-1-4.2-1-2.1 0-2.6 1-4.2 1-1.8 0-3.2-1.8-4.2-3.4C-.6 17.4-.9 12 1.3 9.1 2.4 7.6 4.1 6.7 5.7 6.7c1.7 0 2.7 1 4.1 1 1.3 0 2.1-1 4.1-1 1.4 0 3 .8 4 2.1-3.6 2-3 7.1.1 8.6z"/></svg>macOS · Intel</a>
+        <a data-dl="windows"><svg viewBox="0 0 24 24"><path d="M3 5.5l7.5-1v7.2H3V5.5zm0 13l7.5 1v-7.1H3v6.1zM11.5 4.3L21 3v8.7h-9.5V4.3zm0 15.4L21 21v-8.6h-9.5v7.3z"/></svg>Windows · x86_64</a>
+        <a data-dl="linux"><svg viewBox="0 0 24 24"><path d="M12 2c-2 0-3 1.7-3 3.6 0 1.3.1 2.3-.6 3.4-.8 1.2-2.4 2.6-2.4 5.3 0 .9.3 1.6.3 2.4-.4.5-1.3 1-1.3 1.8 0 1.1 1.4 1.3 2.6 1.6 1.1.3 1.9 1 3 1.1.4 0 .8 0 1.2-.1.9.2 1.9.2 2.8-.1 1-.2 1.7-.8 2.7-1 1.2-.3 2.5-.5 2.5-1.6 0-.8-.8-1.3-1.2-1.8.1-.8.3-1.5.3-2.3 0-2.7-1.6-4.1-2.4-5.3-.7-1.1-.6-2.1-.6-3.4C15 3.7 14 2 12 2z"/></svg>Linux · x86_64</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a href="#top" class="brand"><span class="dot"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4l14 8L6 20V4z" fill="#04121a"/></svg></span>VELOX</a>
+        <p>A professional, scriptable video editor — a fast timeline, real keyframes, GPU-accelerated export, and clips you can program.</p>
+      </div>
+      <div class="foot-cols">
+        <div class="foot-col">
+          <h5>Product</h5>
+          <a href="#scriptable">Scriptable Clips</a>
+          <a href="#features">Features</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#download">Download</a>
+        </div>
+        <div class="foot-col">
+          <h5>Resources</h5>
+          <a class="docs-link">Documentation</a>
+          <a class="docs-link">Script FX API</a>
+          <a class="docs-link">Keyboard shortcuts</a>
+          <a class="docs-link">Release notes</a>
+        </div>
+        <div class="foot-col">
+          <h5>Platforms</h5>
+          <a data-dl="macos-arm">macOS · Apple Silicon</a>
+          <a data-dl="macos-intel">macOS · Intel</a>
+          <a data-dl="windows">Windows · x86_64</a>
+          <a data-dl="linux">Linux · x86_64</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>© 2026 Velox Editor. All rights reserved.</span>
+      <span class="mono" style="color:var(--muted)">V · Select &nbsp; C · Razor &nbsp; Y · Tracker &nbsp; E · Color &nbsp; K · Keyframes</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ---------- config: fill these in when links are ready ---------- */
+const DOWNLOAD_LINKS = {
+  "macos-arm":   "#", // macOS Apple Silicon (arm64)
+  "macos-intel": "#", // macOS Intel (x86_64)
+  "windows":     "#", // Windows x86_64
+  "linux":       "#"  // Linux x86_64
+};
+const DOCS_URL = "#"; // documentation link
+
+/* ---------- nav scroll state + progress + parallax ---------- */
+const nav = document.getElementById('nav');
+const prog = document.getElementById('scrollProg');
+const heroFrame = document.getElementById('heroFrame');
+function onScroll(){
+  const y = window.scrollY;
+  nav.classList.toggle('scrolled', y > 20);
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  prog.style.width = (h>0 ? (y/h*100) : 0) + '%';
+  if(heroFrame){
+    const t = Math.min(y/600,1);
+    heroFrame.style.transform = 'rotateX(' + (12-12*t) + 'deg) scale(' + (.98+.02*t) + ') translateY(' + (y*0.04) + 'px)';
+  }
+  document.querySelectorAll('.playhead').forEach(function(p){
+    const r = p.getBoundingClientRect();
+    const v = 1 - Math.min(Math.max(r.top/window.innerHeight,0),1);
+    p.style.setProperty('--ph', (10 + v*80).toFixed(1) + '%');
+  });
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+/* ---------- reveal on scroll ---------- */
+const io = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+},{threshold:.14, rootMargin:'0px 0px -8% 0px'});
+document.querySelectorAll('.reveal:not(.in)').forEach(function(el){ io.observe(el); });
+
+/* ---------- download dropdowns ---------- */
+function wireDropdown(dlId, btnId){
+  const dl = document.getElementById(dlId);
+  const btn = document.getElementById(btnId);
+  if(!dl||!btn) return;
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    document.querySelectorAll('.dl.open').forEach(function(o){ if(o!==dl){o.classList.remove('open');o.querySelector('.dl-btn').setAttribute('aria-expanded','false');} });
+    const open = dl.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open?'true':'false');
+  });
+}
+wireDropdown('dl','dlBtn');
+wireDropdown('dl2','dlBtn2');
+document.addEventListener('click', function(){
+  document.querySelectorAll('.dl.open').forEach(function(o){o.classList.remove('open');o.querySelector('.dl-btn').setAttribute('aria-expanded','false');});
+});
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') document.querySelectorAll('.dl.open').forEach(function(o){o.classList.remove('open');}); });
+
+/* ---------- download / docs link handling ---------- */
+function goDownload(key){
+  const url = DOWNLOAD_LINKS[key];
+  if(url && url !== '#'){ window.location.href = url; }
+  else { toast('Download link coming soon — ' + key.replace('-',' ')); }
+}
+document.querySelectorAll('[data-dl]').forEach(function(el){
+  el.addEventListener('click', function(e){ e.preventDefault(); goDownload(el.getAttribute('data-dl')); });
+});
+function goDocs(e){ if(e) e.preventDefault(); if(DOCS_URL && DOCS_URL!=='#'){window.location.href=DOCS_URL;} else {toast('Documentation link coming soon');} }
+['docsBtn','docsBtn2','navDocs'].forEach(function(id){ const el=document.getElementById(id); if(el) el.addEventListener('click', goDocs); });
+document.querySelectorAll('.docs-link').forEach(function(a){ a.addEventListener('click', goDocs); });
+
+/* ---------- tiny toast ---------- */
+let toastEl;
+function toast(msg){
+  if(!toastEl){
+    toastEl=document.createElement('div');
+    toastEl.style.cssText='position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);background:#12161f;border:1px solid #2a3342;color:#e8eef6;padding:12px 18px;border-radius:10px;font-size:14px;z-index:999;box-shadow:0 20px 50px -20px rgba(0,0,0,.8);opacity:0;transition:all .3s cubic-bezier(.22,1,.36,1);font-family:Inter,sans-serif';
+    document.body.appendChild(toastEl);
+  }
+  toastEl.textContent=msg;
+  requestAnimationFrame(function(){toastEl.style.opacity='1';toastEl.style.transform='translateX(-50%) translateY(0)';});
+  clearTimeout(toastEl._t);
+  toastEl._t=setTimeout(function(){toastEl.style.opacity='0';toastEl.style.transform='translateX(-50%) translateY(20px)';},2600);
+}
+
+/* ---------- default download label by OS ---------- */
+(function(){
+  const p = navigator.platform || navigator.userAgent;
+  let label='Download for macOS';
+  if(/Win/i.test(p)) label='Download for Windows';
+  else if(/Linux/i.test(p) && !/Android/i.test(p)) label='Download for Linux';
+  const span = document.getElementById('dlLabel');
+  if(span) span.textContent = label;
+})();
+
+/* ================= SCRIPT FX LIVE DEMO ================= */
+const FX = {
+  bars: {
+    name:'bar-graph.fx.js', time:'1.8s',
+    code:[
+      [['// Animated bar graph','c-com']],
+      [['const','c-key'],[' bars = ['],['0.8, 0.55, 0.95, 0.4, 0.7, 0.6, 0.85','c-num'],['];']],
+      [['const','c-key'],[' pad = '],['0.08','c-num'],[', gap = '],['0.02','c-num'],[';']],
+      [['const','c-key'],[' bw = (w - pad*2 - gap*(bars.length-1)) / bars.length;']],
+      [['for','c-key'],[' ('],['let','c-key'],[' i='],['0','c-num'],['; i < bars.length; i++) {']],
+      [['  const grow = fx.'],['smooth','c-fn'],['(fx.'],['clamp','c-fn'],['((t - i*0.12)/0.6, 0, 1));']],
+      [['  const bh = bars[i] * maxH * grow;']],
+      [['  ctx.'],['fillStyle','c-fn'],[' = '],["'hsl(' + (180+i*14) + ', 85%, 60%)'",'c-str'],[';']],
+      [['  ctx.'],['fillRect','c-fn'],['(x, baseY - bh, bw, bh);']],
+      [['}']]
+    ]
+  },
+  wave: {
+    name:'waveform.fx.js', time:'1.4s',
+    code:[
+      [['// Scrolling waveform','c-com']],
+      [['const','c-key'],[' midY = h / '],['2','c-num'],[';']],
+      [['for','c-key'],[' ('],['let','c-key'],[' layer='],['0','c-num'],['; layer < '],['3','c-num'],['; layer++) {']],
+      [['  ctx.'],['beginPath','c-fn'],['();']],
+      [['  const amp = h * (0.18 - layer*0.04);']],
+      [['  for','c-key'],[' ('],['let','c-key'],[' x='],['0','c-num'],['; x <= w; x += '],['6','c-num'],[') {']],
+      [['    const p = (x/w)*fx.TWO_PI*freq + t*(2+layer);']],
+      [['    const y = midY + Math.'],['sin','c-fn'],['(p)*amp;']],
+      [['    x===0 ? ctx.'],['moveTo','c-fn'],['(x,y) : ctx.'],['lineTo','c-fn'],['(x,y);']],
+      [['  }']],
+      [['  ctx.'],['strokeStyle','c-fn'],[' = '],["'hsla('+(190+layer*20)+', 90%, 62%, .9)'",'c-str'],[';']],
+      [['  ctx.'],['stroke','c-fn'],['();']],
+      [['}']]
+    ]
+  },
+  pulse:{
+    name:'radial-pulse.fx.js', time:'2.0s',
+    code:[
+      [['// Radial pulse rings','c-com']],
+      [['const','c-key'],[' cx = w/'],['2','c-num'],[', cy = h/'],['2','c-num'],[';']],
+      [['for','c-key'],[' ('],['let','c-key'],[' r='],['0','c-num'],['; r < '],['5','c-num'],['; r++) {']],
+      [['  const phase = (t*0.6 + r*0.2) % 1;']],
+      [['  const rad = phase * Math.'],['min','c-fn'],['(w,h) * 0.5;']],
+      [['  const a = (1 - phase) * 0.8;']],
+      [['  ctx.'],['beginPath','c-fn'],['();']],
+      [['  ctx.'],['arc','c-fn'],['(cx, cy, rad, '],['0','c-num'],[', fx.TWO_PI);']],
+      [['  ctx.'],['strokeStyle','c-fn'],[' = '],["'rgba(124,108,240,'+a+')'",'c-str'],[';']],
+      [['  ctx.'],['lineWidth','c-fn'],[' = '],['3','c-num'],['; ctx.'],['stroke','c-fn'],['();']],
+      [['}']]
+    ]
+  }
+};
+
+const codeBody = document.getElementById('codeBody');
+const codeName = document.getElementById('codeName');
+const fxTime = document.getElementById('fxTime');
+function renderCode(key){
+  const data = FX[key];
+  codeName.textContent = data.name;
+  fxTime.textContent = data.time;
+  codeBody.innerHTML='';
+  data.code.forEach(function(line){
+    const div=document.createElement('div'); div.className='ln';
+    line.forEach(function(tok){
+      const s=document.createElement('span');
+      if(tok[1]) s.className=tok[1];
+      s.textContent=tok[0];
+      div.appendChild(s);
+    });
+    codeBody.appendChild(div);
+  });
+}
+
+/* canvas rendering */
+const canvas = document.getElementById('fxCanvas');
+const ctx = canvas.getContext('2d');
+const fx = { smooth:function(x){return x*x*(3-2*x);}, clamp:function(x,a,b){return Math.max(a,Math.min(b,x));}, TWO_PI:Math.PI*2 };
+let current='bars', playing=true, t=0, raf=null, last=performance.now();
+const fill=document.getElementById('fxFill');
+const playIco=document.getElementById('fxPlayIco');
+
+function roundRect(x,y,w,h,r){ r=Math.min(r,w/2,Math.abs(h)/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+function drawBars(tt){
+  const w=canvas.width,h=canvas.height;
+  const bars=[0.8,0.55,0.95,0.4,0.7,0.6,0.85];
+  const pad=w*0.09, gap=w*0.02, maxH=h*0.72, baseY=h*0.86;
+  const bw=(w-pad*2-gap*(bars.length-1))/bars.length;
+  for(let i=0;i<bars.length;i++){
+    const grow=fx.smooth(fx.clamp((tt-i*0.12)/0.6,0,1));
+    const wob=1+Math.sin(tt*2+i)*0.03;
+    const bh=bars[i]*maxH*grow*wob;
+    const x=pad+i*(bw+gap);
+    const g=ctx.createLinearGradient(0,baseY-bh,0,baseY);
+    g.addColorStop(0,'hsl('+(180+i*16)+',90%,66%)'); g.addColorStop(1,'hsl('+(210+i*16)+',80%,52%)');
+    ctx.fillStyle=g;
+    roundRect(x,baseY-bh,bw,bh,6); ctx.fill();
+  }
+  ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad*0.5,baseY+0.5); ctx.lineTo(w-pad*0.5,baseY+0.5); ctx.stroke();
+}
+function drawWave(tt){
+  const w=canvas.width,h=canvas.height,midY=h/2,freq=3;
+  for(let layer=0;layer<3;layer++){
+    ctx.beginPath();
+    const amp=h*(0.20-layer*0.045);
+    for(let x=0;x<=w;x+=6){
+      const p=(x/w)*fx.TWO_PI*freq+tt*(2+layer);
+      const y=midY+Math.sin(p)*amp*Math.sin(x/w*Math.PI);
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='hsla('+(190+layer*22)+',90%,62%,'+(0.9-layer*0.2)+')';
+    ctx.lineWidth=3-layer*0.6; ctx.stroke();
+  }
+}
+function drawPulse(tt){
+  const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2;
+  for(let r=0;r<5;r++){
+    const phase=(tt*0.6+r*0.2)%1;
+    const rad=phase*Math.min(w,h)*0.5;
+    const a=(1-phase)*0.85;
+    ctx.beginPath(); ctx.arc(cx,cy,rad,0,fx.TWO_PI);
+    ctx.strokeStyle='rgba('+Math.round(124+phase*40)+','+Math.round(108+phase*60)+',240,'+a+')';
+    ctx.lineWidth=3; ctx.stroke();
+  }
+  ctx.fillStyle='rgba(69,200,239,'+(0.6+Math.sin(tt*3)*0.2)+')';
+  ctx.beginPath(); ctx.arc(cx,cy,10+Math.sin(tt*3)*3,0,fx.TWO_PI); ctx.fill();
+}
+
+const DUR={bars:1.8,wave:1.4,pulse:2.0};
+function frame(now){
+  const dt=(now-last)/1000; last=now;
+  if(playing){ t+=dt; }
+  const dur=DUR[current];
+  const loopT = t % dur;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(current==='bars') drawBars(loopT);
+  else if(current==='wave') drawWave(loopT);
+  else drawPulse(loopT);
+  fill.style.width=(loopT/dur*100)+'%';
+  raf=requestAnimationFrame(frame);
+}
+raf=requestAnimationFrame(frame);
+
+document.getElementById('fxPlay').addEventListener('click',function(){
+  playing=!playing; last=performance.now();
+  playIco.innerHTML = playing
+    ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
+    : '<path d="M7 5l12 7-12 7V5z"/>';
+});
+document.querySelectorAll('.preset').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.preset').forEach(function(x){x.classList.remove('active');});
+    b.classList.add('active');
+    current=b.getAttribute('data-fx'); t=0; last=performance.now();
+    renderCode(current);
+  });
+});
+renderCode('bars');
+
+/* pause canvas when offscreen */
+new IntersectionObserver(function(ents){
+  ents.forEach(function(e){
+    if(!e.isIntersecting){ if(raf){ cancelAnimationFrame(raf); raf=null; } }
+    else if(!raf){ last=performance.now(); raf=requestAnimationFrame(frame); }
+  });
+},{threshold:0}).observe(canvas);
+</script>
+</body>
+</html>
